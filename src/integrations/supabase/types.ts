@@ -14,13 +14,228 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      food_entries: {
+        Row: {
+          brand: string | null
+          calories_per_100g: number
+          carbs_per_100g: number
+          consumed_at: string
+          consumed_date: string
+          created_at: string
+          fats_per_100g: number
+          fiber_per_100g: number | null
+          food_name: string
+          id: string
+          meal_id: string | null
+          protein_per_100g: number
+          serving_size: number
+          serving_unit: string
+          sodium_per_100g: number | null
+          sugar_per_100g: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          calories_per_100g: number
+          carbs_per_100g?: number
+          consumed_at?: string
+          consumed_date?: string
+          created_at?: string
+          fats_per_100g?: number
+          fiber_per_100g?: number | null
+          food_name: string
+          id?: string
+          meal_id?: string | null
+          protein_per_100g?: number
+          serving_size?: number
+          serving_unit?: string
+          sodium_per_100g?: number | null
+          sugar_per_100g?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          calories_per_100g?: number
+          carbs_per_100g?: number
+          consumed_at?: string
+          consumed_date?: string
+          created_at?: string
+          fats_per_100g?: number
+          fiber_per_100g?: number | null
+          food_name?: string
+          id?: string
+          meal_id?: string | null
+          protein_per_100g?: number
+          serving_size?: number
+          serving_unit?: string
+          sodium_per_100g?: number | null
+          sugar_per_100g?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "food_entries_meal_id_fkey"
+            columns: ["meal_id"]
+            isOneToOne: false
+            referencedRelation: "meals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meals: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          order_index: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          order_index?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          order_index?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          activity_level: string | null
+          age: number | null
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          gender: string | null
+          goal: string | null
+          height: number | null
+          id: string
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          activity_level?: string | null
+          age?: number | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          gender?: string | null
+          goal?: string | null
+          height?: number | null
+          id?: string
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          activity_level?: string | null
+          age?: number | null
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          gender?: string | null
+          goal?: string | null
+          height?: number | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
+      user_goals: {
+        Row: {
+          created_at: string
+          daily_calories: number
+          daily_carbs: number
+          daily_fats: number
+          daily_protein: number
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          daily_calories?: number
+          daily_carbs?: number
+          daily_fats?: number
+          daily_protein?: number
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          daily_calories?: number
+          daily_carbs?: number
+          daily_fats?: number
+          daily_protein?: number
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          language: string | null
+          theme: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          language?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          language?: string | null
+          theme?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_daily_calories: {
+        Args: {
+          p_activity_level: string
+          p_age: number
+          p_gender: string
+          p_goal: string
+          p_height: number
+          p_weight: number
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never
