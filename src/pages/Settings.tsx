@@ -12,8 +12,36 @@ import {
   Crown,
   Smartphone
 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 export default function Settings() {
+  const { signOut } = useAuth();
+  const { profile } = useProfile();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignOut = async () => {
+    setIsLoading(true);
+    try {
+      await signOut();
+      toast({
+        title: "Disconnesso",
+        description: "Sei stato disconnesso con successo",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: "Errore durante la disconnessione",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const settingsGroups = [
     {
       title: "Profilo",
@@ -48,8 +76,8 @@ export default function Settings() {
             <User className="w-8 h-8 text-primary-foreground" />
           </div>
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-foreground">Mario Rossi</h2>
-            <p className="text-sm text-muted-foreground">mario.rossi@email.com</p>
+            <h2 className="text-lg font-semibold text-foreground">{profile?.display_name || "Utente"}</h2>
+            <p className="text-sm text-muted-foreground">{profile?.email}</p>
             <div className="flex items-center space-x-2 mt-1">
               <div className="px-2 py-1 bg-primary/10 rounded-full">
                 <span className="text-xs text-primary font-medium">Piano Gratuito</span>
@@ -131,9 +159,11 @@ export default function Settings() {
         variant="outline" 
         size="lg" 
         className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+        onClick={handleSignOut} 
+        disabled={isLoading}
       >
         <LogOut className="w-4 h-4 mr-2" />
-        Disconnetti
+        {isLoading ? "Disconnessione..." : "Disconnetti"}
       </Button>
     </div>
   );
