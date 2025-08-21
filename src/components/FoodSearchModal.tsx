@@ -28,12 +28,21 @@ export function FoodSearchModal({ isOpen, onClose, selectedMealId }: FoodSearchM
   const { toast } = useToast();
 
   useEffect(() => {
+    let isCancelled = false;
+    
     if (searchQuery.length >= 2) {
-      const results = FoodService.searchFoods(searchQuery);
-      setSearchResults(results);
+      FoodService.searchFoods(searchQuery).then(results => {
+        if (!isCancelled) {
+          setSearchResults(results);
+        }
+      });
     } else {
       setSearchResults([]);
     }
+    
+    return () => {
+      isCancelled = true;
+    };
   }, [searchQuery]);
 
   const handleFoodSelect = (food: FoodItem) => {

@@ -19,13 +19,14 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <AuthProvider>
+      {/* Commented out for testing - AuthProvider will be re-enabled later */}
+      {/* <AuthProvider> */}
         <Toaster />
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            {/* <Route path="/auth" element={<Auth />} /> */}
+            <Route path="/" element={<Layout />}>
               <Route index element={<Dashboard />} />
               <Route path="diary" element={<Diary />} />
               <Route path="add" element={<AddFood />} />
@@ -33,10 +34,10 @@ const App = () => (
               <Route path="settings" element={<Settings />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </AuthProvider>
+      {/* </AuthProvider> */}
     </TooltipProvider>
   </QueryClientProvider>
 );

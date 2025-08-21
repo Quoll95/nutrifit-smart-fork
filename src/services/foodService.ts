@@ -70,7 +70,42 @@ const FOOD_DATABASE: FoodItem[] = [
 ];
 
 export class FoodService {
-  static searchFoods(query: string): FoodItem[] {
+  // Search using OpenFoodFacts API
+  static async searchFoods(query: string): Promise<FoodItem[]> {
+    if (!query || query.length < 2) return [];
+    
+    try {
+      const response = await fetch(`https://world.openfoodfacts.org/api/v0/products.json?search=${encodeURIComponent(query)}&page_size=20`);
+      const data = await response.json();
+      
+      if (data.products) {
+        return data.products.map((product: any) => ({
+          name: product.product_name_it || product.product_name || 'Nome non disponibile',
+          brand: product.brands || undefined,
+          calories_per_100g: parseFloat(product.nutriments?.['energy-kcal_100g']) || 0,
+          protein_per_100g: parseFloat(product.nutriments?.proteins_100g) || 0,
+          carbs_per_100g: parseFloat(product.nutriments?.carbohydrates_100g) || 0,
+          fats_per_100g: parseFloat(product.nutriments?.fat_100g) || 0,
+          fiber_per_100g: parseFloat(product.nutriments?.fiber_100g) || undefined,
+          sugar_per_100g: parseFloat(product.nutriments?.sugars_100g) || undefined,
+          sodium_per_100g: parseFloat(product.nutriments?.sodium_100g) || undefined,
+        })).filter((food: FoodItem) => food.name !== 'Nome non disponibile');
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error searching foods:', error);
+      // Fallback to local database
+      const normalizedQuery = query.toLowerCase().trim();
+      return FOOD_DATABASE.filter(food => 
+        food.name.toLowerCase().includes(normalizedQuery) ||
+        (food.brand && food.brand.toLowerCase().includes(normalizedQuery))
+      ).slice(0, 20);
+    }
+  }
+
+  // Keep local search for fallback
+  static searchFoodsLocal(query: string): FoodItem[] {
     if (!query || query.length < 2) return [];
     
     const normalizedQuery = query.toLowerCase().trim();
