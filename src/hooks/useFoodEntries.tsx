@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+// Commented out for testing - will be re-enabled later  
+// import { useAuth } from '@/contexts/AuthContext';
 
 interface FoodEntry {
   id: string;
@@ -43,7 +44,10 @@ interface DailyNutrition {
 }
 
 export function useFoodEntries(date?: string) {
-  const { user } = useAuth();
+  // Temporary mock user for testing - will use real auth later
+  const mockUser = { id: 'test-user-123' };
+  const user = mockUser;
+  
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [loading, setLoading] = useState(true);
