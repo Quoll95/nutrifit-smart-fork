@@ -70,37 +70,42 @@ const FOOD_DATABASE: FoodItem[] = [
 ];
 
 export class FoodService {
-  // Search using OpenFoodFacts API
+  // Search using OpenFoodFacts API with better error handling
   static async searchFoods(query: string): Promise<FoodItem[]> {
     if (!query || query.length < 2) return [];
     
     try {
-      const response = await fetch(`https://world.openfoodfacts.org/api/v0/products.json?search=${encodeURIComponent(query)}&page_size=20`);
+      // First try OpenFoodFacts API
+      const response = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=20`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       
-      if (data.products) {
-        return data.products.map((product: any) => ({
-          name: product.product_name_it || product.product_name || 'Nome non disponibile',
-          brand: product.brands || undefined,
-          calories_per_100g: parseFloat(product.nutriments?.['energy-kcal_100g']) || 0,
+      if (data.products && Array.isArray(data.products) && data.products.length > 0) {
+        return data.products.slice(0, 10).map((product: any) => ({
+          name: product.product_name_it || product.product_name || product.generic_name_it || product.generic_name || 'Prodotto senza nome',
+          brand: product.brands?.split(',')[0]?.trim() || undefined,
+          calories_per_100g: parseFloat(product.nutriments?.['energy-kcal_100g']) || parseFloat(product.nutriments?.energy_100g) / 4.184 || 0,
           protein_per_100g: parseFloat(product.nutriments?.proteins_100g) || 0,
           carbs_per_100g: parseFloat(product.nutriments?.carbohydrates_100g) || 0,
           fats_per_100g: parseFloat(product.nutriments?.fat_100g) || 0,
           fiber_per_100g: parseFloat(product.nutriments?.fiber_100g) || undefined,
           sugar_per_100g: parseFloat(product.nutriments?.sugars_100g) || undefined,
           sodium_per_100g: parseFloat(product.nutriments?.sodium_100g) || undefined,
-        })).filter((food: FoodItem) => food.name !== 'Nome non disponibile');
+        })).filter((food: FoodItem) => food.name !== 'Prodotto senza nome' && food.calories_per_100g > 0);
       }
       
-      return [];
+      // Fallback to local database if API fails or returns no results
+      console.log('OpenFoodFacts API returned no results, using local database');
+      return this.searchFoodsLocal(query);
+      
     } catch (error) {
-      console.error('Error searching foods:', error);
+      console.error('Error searching foods from API:', error);
       // Fallback to local database
-      const normalizedQuery = query.toLowerCase().trim();
-      return FOOD_DATABASE.filter(food => 
-        food.name.toLowerCase().includes(normalizedQuery) ||
-        (food.brand && food.brand.toLowerCase().includes(normalizedQuery))
-      ).slice(0, 20);
+      return this.searchFoodsLocal(query);
     }
   }
 

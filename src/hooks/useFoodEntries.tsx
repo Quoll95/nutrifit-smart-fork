@@ -44,16 +44,26 @@ interface DailyNutrition {
 }
 
 export function useFoodEntries(date?: string) {
-  // Temporary mock user for testing - will use real auth later
-  const mockUser = { id: 'test-user-123' };
+  // Temporary mock user with valid UUID format for testing
+  const mockUser = { id: '123e4567-e89b-12d3-a456-426614174000' };
   const user = mockUser;
   
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
-  const [meals, setMeals] = useState<Meal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [meals, setMeals] = useState<Meal[]>([
+    // Mock meals for testing
+    { id: '123e4567-e89b-12d3-a456-426614174001', user_id: mockUser.id, name: 'Colazione', order_index: 0, created_at: '', updated_at: '' },
+    { id: '123e4567-e89b-12d3-a456-426614174002', user_id: mockUser.id, name: 'Spuntino Mattina', order_index: 1, created_at: '', updated_at: '' },
+    { id: '123e4567-e89b-12d3-a456-426614174003', user_id: mockUser.id, name: 'Pranzo', order_index: 2, created_at: '', updated_at: '' },
+    { id: '123e4567-e89b-12d3-a456-426614174004', user_id: mockUser.id, name: 'Spuntino Pomeriggio', order_index: 3, created_at: '', updated_at: '' },
+    { id: '123e4567-e89b-12d3-a456-426614174005', user_id: mockUser.id, name: 'Cena', order_index: 4, created_at: '', updated_at: '' }
+  ]);
+  const [loading, setLoading] = useState(false); // No loading for mock data
   const targetDate = date || new Date().toISOString().split('T')[0];
 
   useEffect(() => {
+    // Mock data - skip database calls for testing
+    setLoading(false);
+    /* 
     if (user) {
       fetchMeals();
       fetchFoodEntries();
@@ -62,6 +72,7 @@ export function useFoodEntries(date?: string) {
       setMeals([]);
       setLoading(false);
     }
+    */
   }, [user, targetDate]);
 
   const fetchMeals = async () => {
@@ -113,6 +124,19 @@ export function useFoodEntries(date?: string) {
     if (!user) return;
 
     try {
+      // Mock adding food entry for testing
+      const mockEntry: FoodEntry = {
+        ...entry,
+        id: `mock-entry-${Date.now()}`,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      setFoodEntries(prev => [...prev, mockEntry]);
+      return { data: mockEntry };
+      
+      /* Real database code - commented for testing
       const { data, error } = await supabase
         .from('food_entries')
         .insert({
@@ -129,6 +153,7 @@ export function useFoodEntries(date?: string) {
 
       setFoodEntries(prev => [...prev, data]);
       return { data };
+      */
     } catch (error) {
       console.error('Error adding food entry:', error);
       return { error };
@@ -139,6 +164,13 @@ export function useFoodEntries(date?: string) {
     if (!user) return;
 
     try {
+      // Mock update for testing
+      setFoodEntries(prev => prev.map(entry => 
+        entry.id === id ? { ...entry, ...updates, updated_at: new Date().toISOString() } : entry
+      ));
+      return { data: updates };
+      
+      /* Real database code - commented for testing
       const { data, error } = await supabase
         .from('food_entries')
         .update(updates)
@@ -154,6 +186,7 @@ export function useFoodEntries(date?: string) {
 
       setFoodEntries(prev => prev.map(entry => entry.id === id ? data : entry));
       return { data };
+      */
     } catch (error) {
       console.error('Error updating food entry:', error);
       return { error };
@@ -164,6 +197,11 @@ export function useFoodEntries(date?: string) {
     if (!user) return;
 
     try {
+      // Mock delete for testing
+      setFoodEntries(prev => prev.filter(entry => entry.id !== id));
+      return { success: true };
+      
+      /* Real database code - commented for testing
       const { error } = await supabase
         .from('food_entries')
         .delete()
@@ -177,6 +215,7 @@ export function useFoodEntries(date?: string) {
 
       setFoodEntries(prev => prev.filter(entry => entry.id !== id));
       return { success: true };
+      */
     } catch (error) {
       console.error('Error deleting food entry:', error);
       return { error };
