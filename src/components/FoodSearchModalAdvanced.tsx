@@ -9,6 +9,8 @@ import { Search, Plus, Minus } from "lucide-react";
 import { FoodService, FoodItem } from "@/services/foodService";
 import { useFoodEntries } from "@/hooks/useFoodEntries";
 import { useToast } from "@/hooks/use-toast";
+import { Meal } from "@/hooks/useFoodEntries";
+
 
 // Advanced Food Search Modal
 // - quick add & popular sections that don't trigger the search flow
@@ -18,15 +20,6 @@ import { useToast } from "@/hooks/use-toast";
 
 // Update the import path below to the actual location of Meal type definition
 // Define the Meal type here if not available elsewhere
-export interface Meal {
-  id: string;
-  user_id: string;
-  name: string;
-  order_index: number;
-  created_at: string;
-  updated_at: string;
-}
-// import { Meal } from "../types"; // assicurati che il tipo Meal sia importato dal percorso corretto
 
 type Props = {
   isOpen: boolean
