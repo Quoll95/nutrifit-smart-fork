@@ -3,44 +3,78 @@ import { Button } from "@/components/ui/button";
 import { MacroCard } from "@/components/MacroCard";
 import { CircularProgress } from "@/components/CircularProgress";
 import { Progress } from "@/components/ui/progress";
-import { ChevronRight, Apple, Coffee, Utensils, Moon } from "lucide-react";
+import { ChevronRight, Apple, Coffee, Utensils, Moon, Calendar, TrendingUp } from "lucide-react";
+import { useUserGoals } from "@/hooks/useUserGoals";
+import { useFoodEntries } from "@/hooks/useFoodEntries";
+import { useState } from "react";
 
 export default function Dashboard() {
-  // Dati mock per la demo
-  const dailyGoals = {
-    calories: { current: 1247, target: 2000 },
-    protein: { current: 87, target: 150 },
-    carbs: { current: 143, target: 250 },
-    fats: { current: 42, target: 65 }
+  const [viewPeriod, setViewPeriod] = useState<'daily' | 'weekly' | 'monthly'>('daily');
+  const { progress } = useUserGoals();
+  const { meals, getMealEntries } = useFoodEntries();
+
+  const currentProgress = progress[viewPeriod];
+  const remainingCalories = currentProgress.calories.target - currentProgress.calories.current;
+
+  const mealIcons = {
+    'Colazione': Coffee,
+    'Spuntino Mattina': Apple,
+    'Pranzo': Utensils,
+    'Spuntino Pomeriggio': Apple,
+    'Cena': Moon
   };
 
-  const caloriesPercentage = (dailyGoals.calories.current / dailyGoals.calories.target) * 100;
-  const remainingCalories = dailyGoals.calories.target - dailyGoals.calories.current;
-
-  const recentMeals = [
-    { icon: Coffee, name: "Colazione", calories: 320, time: "08:30" },
-    { icon: Apple, name: "Spuntino", calories: 150, time: "10:15" },
-    { icon: Utensils, name: "Pranzo", calories: 650, time: "13:00" },
-    { icon: Apple, name: "Merenda", calories: 127, time: "16:00" },
-  ];
+  const recentMeals = meals.map(meal => {
+    const mealEntries = getMealEntries(meal.id);
+    const mealCalories = mealEntries.reduce((sum, entry) => {
+      const multiplier = entry.serving_size / 100;
+      return sum + (entry.calories_per_100g * multiplier);
+    }, 0);
+    
+    return {
+      icon: mealIcons[meal.name as keyof typeof mealIcons] || Utensils,
+      name: meal.name,
+      calories: Math.round(mealCalories),
+      hasItems: mealEntries.length > 0
+    };
+  });
 
   return (
     <div className="p-4 space-y-6 max-w-md mx-auto">
+      {/* Period Selection */}
+      <div className="flex space-x-1 bg-muted/30 p-1 rounded-lg">
+        {(['daily', 'weekly', 'monthly'] as const).map((period) => (
+          <Button
+            key={period}
+            variant={viewPeriod === period ? "default" : "ghost"}
+            size="sm"
+            onClick={() => setViewPeriod(period)}
+            className="flex-1 h-8 text-xs"
+          >
+            {period === 'daily' ? 'Oggi' : period === 'weekly' ? 'Settimana' : 'Mese'}
+          </Button>
+        ))}
+      </div>
+
       {/* Calorie Overview Card */}
       <Card className="p-6 shadow-card">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-xl font-bold text-foreground">Calorie di oggi</h2>
-            <p className="text-sm text-muted-foreground">Obiettivo giornaliero</p>
+            <h2 className="text-xl font-bold text-foreground">
+              Calorie {viewPeriod === 'daily' ? 'di oggi' : viewPeriod === 'weekly' ? 'settimanali' : 'mensili'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Obiettivo {viewPeriod === 'daily' ? 'giornaliero' : viewPeriod === 'weekly' ? 'settimanale' : 'mensile'}
+            </p>
           </div>
           <CircularProgress 
-            percentage={caloriesPercentage} 
+            percentage={currentProgress.calories.percentage} 
             size={80} 
             color="primary"
           >
             <div className="text-center">
               <div className="text-lg font-bold text-primary">
-                {Math.round(caloriesPercentage)}%
+                {Math.round(currentProgress.calories.percentage)}%
               </div>
             </div>
           </CircularProgress>
@@ -49,12 +83,12 @@ export default function Dashboard() {
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Consumate</span>
-            <span className="font-medium">{dailyGoals.calories.current} kcal</span>
+            <span className="font-medium">{currentProgress.calories.current} kcal</span>
           </div>
-          <Progress value={caloriesPercentage} className="h-2" />
+          <Progress value={currentProgress.calories.percentage} className="h-2" />
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Rimanenti</span>
-            <span className="font-medium text-primary">{remainingCalories} kcal</span>
+            <span className="font-medium text-primary">{Math.max(0, remainingCalories)} kcal</span>
           </div>
         </div>
       </Card>
@@ -65,22 +99,22 @@ export default function Dashboard() {
         <div className="grid grid-cols-3 gap-3">
           <MacroCard
             title="Proteine"
-            current={dailyGoals.protein.current}
-            target={dailyGoals.protein.target}
+            current={currentProgress.protein.current}
+            target={currentProgress.protein.target}
             unit="g"
             color="protein"
           />
           <MacroCard
             title="Carboidrati"
-            current={dailyGoals.carbs.current}
-            target={dailyGoals.carbs.target}
+            current={currentProgress.carbs.current}
+            target={currentProgress.carbs.target}
             unit="g"
             color="carbs"
           />
           <MacroCard
             title="Grassi"
-            current={dailyGoals.fats.current}
-            target={dailyGoals.fats.target}
+            current={currentProgress.fats.current}
+            target={currentProgress.fats.target}
             unit="g"
             color="fats"
           />
@@ -100,32 +134,28 @@ export default function Dashboard() {
           {recentMeals.map((meal, index) => (
             <div key={index} className="flex items-center justify-between py-2">
               <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <meal.icon className="w-4 h-4 text-primary" />
+                <div className={`p-2 rounded-lg ${meal.hasItems ? 'bg-primary/10' : 'bg-muted/50'}`}>
+                  <meal.icon className={`w-4 h-4 ${meal.hasItems ? 'text-primary' : 'text-muted-foreground'}`} />
                 </div>
                 <div>
-                  <p className="font-medium text-sm text-foreground">{meal.name}</p>
-                  <p className="text-xs text-muted-foreground">{meal.time}</p>
+                  <p className={`font-medium text-sm ${meal.hasItems ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    {meal.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {meal.hasItems ? `${meal.calories} kcal` : 'Non registrato'}
+                  </p>
                 </div>
               </div>
-              <span className="text-sm font-medium text-foreground">{meal.calories} kcal</span>
+              {!meal.hasItems && (
+                <Button size="sm" variant="outline" className="h-7 px-3 text-xs">
+                  Aggiungi
+                </Button>
+              )}
+              {meal.hasItems && (
+                <span className="text-sm font-medium text-foreground">{meal.calories} kcal</span>
+              )}
             </div>
           ))}
-          
-          <div className="flex items-center justify-between py-2 border-t border-border mt-3 pt-3">
-            <div className="flex items-center space-x-3">
-              <div className="p-2 rounded-lg bg-muted/50">
-                <Moon className="w-4 h-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="font-medium text-sm text-muted-foreground">Cena</p>
-                <p className="text-xs text-muted-foreground">Non registrata</p>
-              </div>
-            </div>
-            <Button size="sm" variant="outline" className="h-7 px-3 text-xs">
-              Aggiungi
-            </Button>
-          </div>
         </div>
       </Card>
 

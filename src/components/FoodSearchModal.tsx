@@ -24,7 +24,7 @@ export function FoodSearchModal({ isOpen, onClose, selectedMealId }: FoodSearchM
   const [servingUnit, setServingUnit] = useState("g");
   const [isAdding, setIsAdding] = useState(false);
 
-  const { addFoodEntry, meals } = useFoodEntries();
+  const { addFoodEntry, meals, refetch } = useFoodEntries();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -92,6 +92,7 @@ export function FoodSearchModal({ isOpen, onClose, selectedMealId }: FoodSearchM
           title: "Alimento aggiunto",
           description: `${selectedFood.name} aggiunto al diario`,
         });
+        refetch(); // Refresh data after adding
         onClose();
         resetForm();
       }
