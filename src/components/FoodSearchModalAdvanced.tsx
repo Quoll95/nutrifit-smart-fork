@@ -16,11 +16,26 @@ import { useToast } from "@/hooks/use-toast";
 // - when 'pz' is selected and no piece weight exists, user is asked to provide peso/pezzo
 // - previews macros updated live when unit/size changes
 
-interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  selectedMealId?: string | null;
+// Update the import path below to the actual location of Meal type definition
+// Define the Meal type here if not available elsewhere
+export interface Meal {
+  id: string;
+  user_id: string;
+  name: string;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
 }
+// import { Meal } from "../types"; // assicurati che il tipo Meal sia importato dal percorso corretto
+
+type Props = {
+  isOpen: boolean
+  onClose: () => void
+  selectedMealId: string
+  meals: Meal[]   // 👈 aggiungi questa riga
+  onAdded: () => Promise<void>
+}
+
 
 // A handful of quick/popular items as examples — replace with your API if available
 const SAMPLE_POPULAR: Partial<FoodItem>[] = [

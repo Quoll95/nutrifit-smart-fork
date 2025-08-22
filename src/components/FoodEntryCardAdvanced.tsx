@@ -28,9 +28,12 @@ interface Props {
   entry: FoodEntry;
   onDragStart?: (e: React.DragEvent, entry: FoodEntry) => void;
   isDragging?: boolean;
+  onUpdate?: (id: string, updates: Partial<FoodEntry>) => Promise<any>;
+  onDelete?: (id: string) => Promise<any>;
 }
 
-export default function FoodEntryCardAdvanced({ entry, onDragStart, isDragging }: Props) {
+
+export default function FoodEntryCardAdvanced({ entry, onDragStart, isDragging, onDelete, onUpdate }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     serving_size: entry.serving_size.toString(),
@@ -38,7 +41,7 @@ export default function FoodEntryCardAdvanced({ entry, onDragStart, isDragging }
   });
   const [pieceWeightOverride, setPieceWeightOverride] = useState<string>(entry.serving_weight_grams ? String(entry.serving_weight_grams) : "");
 
-  const { updateFoodEntry, deleteFoodEntry } = useFoodEntries();
+
   const { toast } = useToast();
 
   // Convert a (size, unit) for this entry to grams using available metadata.
@@ -102,7 +105,7 @@ export default function FoodEntryCardAdvanced({ entry, onDragStart, isDragging }
       // include metadata if available so backend can keep piece weight
       if (override) payload.serving_weight_grams = override;
 
-      const result = await updateFoodEntry(entry.id, payload);
+      const result = onUpdate ? await onUpdate(entry.id, payload) : null;
       if (result?.error) {
         toast({ variant: 'destructive', title: 'Errore', description: 'Errore durante l\'aggiornamento' });
       } else {
@@ -114,10 +117,12 @@ export default function FoodEntryCardAdvanced({ entry, onDragStart, isDragging }
     }
   };
 
+
+
   const handleDelete = async () => {
     if (!confirm(`Vuoi eliminare ${entry.food_name}?`)) return;
     try {
-      const result = await deleteFoodEntry(entry.id);
+      const result = onDelete ? await onDelete(entry.id) : null;
       if (result?.error) {
         toast({ variant: 'destructive', title: 'Errore', description: 'Errore durante l\'eliminazione' });
       } else {

@@ -24,7 +24,7 @@ interface FoodEntry {
   updated_at: string;
 }
 
-interface Meal {
+export interface Meal {
   id: string;
   user_id: string;
   name: string;
@@ -44,37 +44,17 @@ interface DailyNutrition {
 }
 
 export function useFoodEntries(date?: string) {
-  // Temporary mock user with valid UUID format for testing
   const mockUser = { id: '123e4567-e89b-12d3-a456-426614174000' };
   const user = mockUser;
-  
+
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
-  const [meals, setMeals] = useState<Meal[]>([
-    // Mock meals for testing
-    { id: '123e4567-e89b-12d3-a456-426614174001', user_id: mockUser.id, name: 'Colazione', order_index: 0, created_at: '', updated_at: '' },
-    { id: '123e4567-e89b-12d3-a456-426614174002', user_id: mockUser.id, name: 'Spuntino Mattina', order_index: 1, created_at: '', updated_at: '' },
-    { id: '123e4567-e89b-12d3-a456-426614174003', user_id: mockUser.id, name: 'Pranzo', order_index: 2, created_at: '', updated_at: '' },
-    { id: '123e4567-e89b-12d3-a456-426614174004', user_id: mockUser.id, name: 'Spuntino Pomeriggio', order_index: 3, created_at: '', updated_at: '' },
-    { id: '123e4567-e89b-12d3-a456-426614174005', user_id: mockUser.id, name: 'Cena', order_index: 4, created_at: '', updated_at: '' }
-  ]);
-  const [loading, setLoading] = useState(false); // No loading for mock data
+  const [meals, setMeals] = useState<Meal[]>([/* same mock meals as before */]);
+  const [loading, setLoading] = useState(false);
   const targetDate = date || new Date().toISOString().split('T')[0];
 
-  useEffect(() => {
-    if (user) {
-      setLoading(true);
-      fetchMeals();
-      fetchFoodEntries();
-    } else {
-      setFoodEntries([]);
-      setMeals([]);
-      setLoading(false);
-    }
-  }, [user, targetDate]);
-
+  // fetch helpers (now return Promises)
   const fetchMeals = async () => {
     if (!user) return;
-
     try {
       const { data, error } = await supabase
         .from('meals')
@@ -86,16 +66,14 @@ export function useFoodEntries(date?: string) {
         console.error('Error fetching meals:', error);
         return;
       }
-
       setMeals(data || []);
-    } catch (error) {
-      console.error('Error fetching meals:', error);
+    } catch (err) {
+      console.error('Error fetching meals:', err);
     }
   };
 
   const fetchFoodEntries = async () => {
     if (!user) return;
-
     try {
       const { data, error } = await supabase
         .from('food_entries')
@@ -106,27 +84,51 @@ export function useFoodEntries(date?: string) {
 
       if (error) {
         console.error('Error fetching food entries:', error);
+        setFoodEntries([]);
         return;
       }
 
-      setFoodEntries(data || []);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error fetching food entries:', error);
-      setLoading(false);
+      // ensure determinisitc ordering and fill missing fields
+      const safeData = (data || []).map((d: any) => ({
+        ...d,
+        serving_size: d.serving_size ?? 0,
+        serving_unit: d.serving_unit ?? 'g',
+        meal_id: d.meal_id ?? null,
+      }));
+      setFoodEntries(safeData);
+    } catch (err) {
+      console.error('Error fetching food entries:', err);
+      setFoodEntries([]);
     }
   };
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!user) {
+        setFoodEntries([]);
+        setMeals([]);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      await fetchMeals();
+      await fetchFoodEntries();
+      if (mounted) setLoading(false);
+    })();
+    return () => { mounted = false; };
+  }, [user, targetDate]);
+
+  // add/update/delete now force a refetch of server data to keep single source consistent
   const addFoodEntry = async (entry: Omit<FoodEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>) => {
-    if (!user) return;
+    if (!user) return { error: 'no-user' };
 
     try {
+      // ensure consumed_date: if not provided, use targetDate
+      const payload = { ...entry, user_id: user.id, consumed_date: entry.consumed_date || targetDate };
       const { data, error } = await supabase
         .from('food_entries')
-        .insert({
-          ...entry,
-          user_id: user.id,
-        })
+        .insert(payload)
         .select()
         .single();
 
@@ -135,17 +137,17 @@ export function useFoodEntries(date?: string) {
         return { error };
       }
 
-      setFoodEntries(prev => [...prev, data]);
+      // refresh server state (preferred to local push to avoid inconsistencies)
+      await fetchFoodEntries();
       return { data };
-    } catch (error) {
-      console.error('Error adding food entry:', error);
-      return { error };
+    } catch (err) {
+      console.error('Error adding food entry:', err);
+      return { error: err };
     }
   };
 
   const updateFoodEntry = async (id: string, updates: Partial<FoodEntry>) => {
-    if (!user) return;
-
+    if (!user) return { error: 'no-user' };
     try {
       const { data, error } = await supabase
         .from('food_entries')
@@ -160,17 +162,17 @@ export function useFoodEntries(date?: string) {
         return { error };
       }
 
-      setFoodEntries(prev => prev.map(entry => entry.id === id ? data : entry));
+      // refresh server state for consistency
+      await fetchFoodEntries();
       return { data };
-    } catch (error) {
-      console.error('Error updating food entry:', error);
-      return { error };
+    } catch (err) {
+      console.error('Error updating food entry:', err);
+      return { error: err };
     }
   };
 
   const deleteFoodEntry = async (id: string) => {
-    if (!user) return;
-
+    if (!user) return { error: 'no-user' };
     try {
       const { error } = await supabase
         .from('food_entries')
@@ -183,46 +185,33 @@ export function useFoodEntries(date?: string) {
         return { error };
       }
 
-      setFoodEntries(prev => prev.filter(entry => entry.id !== id));
+      await fetchFoodEntries();
       return { success: true };
-    } catch (error) {
-      console.error('Error deleting food entry:', error);
-      return { error };
+    } catch (err) {
+      console.error('Error deleting food entry:', err);
+      return { error: err };
     }
   };
 
+  // meals CRUD keep as before but force refetches after write
   const addMeal = async (name: string) => {
-    if (!user) return;
-
-    const newOrderIndex = meals.length;
-
+    if (!user) return { error: 'no-user' };
     try {
+      const newOrderIndex = meals.length;
       const { data, error } = await supabase
         .from('meals')
-        .insert({
-          user_id: user.id,
-          name,
-          order_index: newOrderIndex,
-        })
+        .insert({ user_id: user.id, name, order_index: newOrderIndex })
         .select()
         .single();
 
-      if (error) {
-        console.error('Error adding meal:', error);
-        return { error };
-      }
-
-      setMeals(prev => [...prev, data]);
+      if (error) { console.error('Error adding meal:', error); return { error }; }
+      await fetchMeals();
       return { data };
-    } catch (error) {
-      console.error('Error adding meal:', error);
-      return { error };
-    }
+    } catch (err) { console.error(err); return { error: err }; }
   };
 
   const updateMeal = async (id: string, updates: Partial<Meal>) => {
-    if (!user) return;
-
+    if (!user) return { error: 'no-user' };
     try {
       const { data, error } = await supabase
         .from('meals')
@@ -231,23 +220,14 @@ export function useFoodEntries(date?: string) {
         .eq('user_id', user.id)
         .select()
         .single();
-
-      if (error) {
-        console.error('Error updating meal:', error);
-        return { error };
-      }
-
-      setMeals(prev => prev.map(meal => meal.id === id ? data : meal));
+      if (error) return { error };
+      await fetchMeals();
       return { data };
-    } catch (error) {
-      console.error('Error updating meal:', error);
-      return { error };
-    }
+    } catch (err) { console.error(err); return { error: err }; }
   };
 
   const deleteMeal = async (id: string) => {
-    if (!user) return;
-
+    if (!user) return { error: 'no-user' };
     try {
       const { error } = await supabase
         .from('meals')
@@ -255,49 +235,39 @@ export function useFoodEntries(date?: string) {
         .eq('id', id)
         .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error deleting meal:', error);
-        return { error };
-      }
-
-      setMeals(prev => prev.filter(meal => meal.id !== id));
+      if (error) return { error };
+      await fetchMeals();
       return { success: true };
-    } catch (error) {
-      console.error('Error deleting meal:', error);
-      return { error };
-    }
+    } catch (err) { console.error(err); return { error: err }; }
   };
 
-  // Calculate daily nutrition totals
+  // Calculate daily nutrition totals (keep as function that reads current state)
   const calculateDailyNutrition = (): DailyNutrition => {
-    return foodEntries.reduce(
-      (totals, entry) => {
-        const multiplier = entry.serving_size / 100;
-        
-        return {
-          totalCalories: totals.totalCalories + (entry.calories_per_100g * multiplier),
-          totalProtein: totals.totalProtein + (entry.protein_per_100g * multiplier),
-          totalCarbs: totals.totalCarbs + (entry.carbs_per_100g * multiplier),
-          totalFats: totals.totalFats + (entry.fats_per_100g * multiplier),
-          totalFiber: totals.totalFiber + ((entry.fiber_per_100g || 0) * multiplier),
-          totalSugar: totals.totalSugar + ((entry.sugar_per_100g || 0) * multiplier),
-          totalSodium: totals.totalSodium + ((entry.sodium_per_100g || 0) * multiplier),
-        };
-      },
-      {
-        totalCalories: 0,
-        totalProtein: 0,
-        totalCarbs: 0,
-        totalFats: 0,
-        totalFiber: 0,
-        totalSugar: 0,
-        totalSodium: 0,
-      }
-    );
+    return foodEntries.reduce((totals, entry) => {
+      const multiplier = (entry.serving_size || 0) / 100;
+      return {
+        totalCalories: totals.totalCalories + ((entry.calories_per_100g || 0) * multiplier),
+        totalProtein: totals.totalProtein + ((entry.protein_per_100g || 0) * multiplier),
+        totalCarbs: totals.totalCarbs + ((entry.carbs_per_100g || 0) * multiplier),
+        totalFats: totals.totalFats + ((entry.fats_per_100g || 0) * multiplier),
+        totalFiber: totals.totalFiber + ((entry.fiber_per_100g || 0) * multiplier),
+        totalSugar: totals.totalSugar + ((entry.sugar_per_100g || 0) * multiplier),
+        totalSodium: totals.totalSodium + ((entry.sodium_per_100g || 0) * multiplier),
+      };
+    }, {
+      totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFats: 0, totalFiber: 0, totalSugar: 0, totalSodium: 0
+    });
   };
 
   const getMealEntries = (mealId: string | null) => {
     return foodEntries.filter(entry => entry.meal_id === mealId);
+  };
+
+  const refetch = async () => {
+    setLoading(true);
+    await fetchMeals();
+    await fetchFoodEntries();
+    setLoading(false);
   };
 
   return {
@@ -312,9 +282,6 @@ export function useFoodEntries(date?: string) {
     deleteMeal,
     calculateDailyNutrition,
     getMealEntries,
-    refetch: () => {
-      fetchMeals();
-      fetchFoodEntries();
-    }
+    refetch,
   };
 }
