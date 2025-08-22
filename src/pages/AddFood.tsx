@@ -6,6 +6,7 @@ import { Search, Scan, Clock, Star } from "lucide-react";
 import { useState } from "react";
 import { FoodService } from "@/services/foodService";
 import { FoodSearchModal } from "@/components/FoodSearchModal";
+import FoodSearchModalAdvanced from "@/components/FoodSearchModalAdvanced";
 import { useFoodEntries } from "@/hooks/useFoodEntries";
 
 export default function AddFood() {
@@ -183,7 +184,7 @@ export default function AddFood() {
         </Card>
       )}
 
-      <FoodSearchModal
+      <FoodSearchModalAdvanced
         isOpen={isSearchModalOpen}
         onClose={() => setIsSearchModalOpen(false)}
         selectedMealId={selectedMealId}

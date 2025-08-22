@@ -2,6 +2,7 @@
 // For now, we'll use a local database of common foods for demonstration
 
 interface FoodItem {
+  id?: string;
   name: string;
   brand?: string;
   calories_per_100g: number;
@@ -11,6 +12,7 @@ interface FoodItem {
   fiber_per_100g?: number;
   sugar_per_100g?: number;
   sodium_per_100g?: number;
+  serving_weight_grams?: number;
 }
 
 // Common Italian foods database
@@ -70,6 +72,9 @@ const FOOD_DATABASE: FoodItem[] = [
 ];
 
 export class FoodService {
+  static lookupByName(name: string) {
+      throw new Error("Method not implemented.");
+  }
   // Search using OpenFoodFacts API with better error handling
   static async searchFoods(query: string): Promise<FoodItem[]> {
     if (!query || query.length < 2) return [];
