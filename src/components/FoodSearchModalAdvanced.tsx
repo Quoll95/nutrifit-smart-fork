@@ -25,7 +25,7 @@ type Props = {
   isOpen: boolean
   onClose: () => void
   selectedMealId: string
-  meals: Meal[]   // 👈 aggiungi questa riga
+  meals: Meal[]   
   onAdded: () => Promise<void>
 }
 
