@@ -1,12 +1,14 @@
-import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { useFoodEntries } from "@/hooks/useFoodEntries";
+import { FoodSearchModal } from "@/components/FoodSearchModal";
+import { FoodEntryCard } from "@/components/FoodEntryCard";
+import FoodEntryCardAdvanced from "@/components/FoodEntryCardAdvanced";
 import { useToast } from "@/hooks/use-toast";
 import FoodSearchModalAdvanced from "@/components/FoodSearchModalAdvanced";
-import FoodEntryCardAdvanced from "@/components/FoodEntryCardAdvanced";
 
 export default function Diary() {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -15,18 +17,17 @@ export default function Diary() {
   const [draggedEntry, setDraggedEntry] = useState<any>(null);
 
   const targetDate = selectedDate.toISOString().split('T')[0];
-  // now we also take refetch from the hook so the page can refresh after modal actions
-  const { meals, foodEntries, loading, calculateDailyNutrition, getMealEntries, updateFoodEntry, refetch } = useFoodEntries(targetDate);
+  const { meals, foodEntries, loading, calculateDailyNutrition, getMealEntries, updateFoodEntry } = useFoodEntries(targetDate);
   const { toast } = useToast();
 
   const dailyNutrition = calculateDailyNutrition();
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('it-IT', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return date.toLocaleDateString('it-IT', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
     });
   };
 
@@ -53,7 +54,7 @@ export default function Diary() {
 
   const handleDrop = async (e: React.DragEvent, targetMealId: string) => {
     e.preventDefault();
-
+    
     if (draggedEntry && draggedEntry.meal_id !== targetMealId) {
       try {
         const result = await updateFoodEntry(draggedEntry.id, {
@@ -61,18 +62,27 @@ export default function Diary() {
         });
 
         if (result?.error) {
-          toast({ variant: "destructive", title: "Errore", description: "Errore durante lo spostamento" });
+          toast({
+            variant: "destructive",  
+            title: "Errore",
+            description: "Errore durante lo spostamento"
+          });
         } else {
           const targetMeal = meals.find(m => m.id === targetMealId);
-          toast({ title: "Alimento spostato", description: `${draggedEntry.food_name} spostato in ${targetMeal?.name}` });
-          // refresh the diary so entries appear in the right meal
-          if (refetch) refetch();
+          toast({
+            title: "Alimento spostato",
+            description: `${draggedEntry.food_name} spostato in ${targetMeal?.name}`
+          });
         }
       } catch (error) {
-        toast({ variant: "destructive", title: "Errore", description: "Errore durante lo spostamento" });
+        toast({
+          variant: "destructive",
+          title: "Errore", 
+          description: "Errore durante lo spostamento"
+        });
       }
     }
-
+    
     setDraggedEntry(null);
   };
 
@@ -93,16 +103,30 @@ export default function Diary() {
       {/* Date Navigation */}
       <Card className="p-4 shadow-card">
         <div className="flex items-center justify-between">
-          <Button variant="ghost" size="sm" onClick={() => changeDate('prev')} className="p-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => changeDate('prev')}
+            className="p-2"
+          >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-
+          
           <div className="text-center">
-            <h2 className="font-semibold text-foreground capitalize">{formatDate(selectedDate)}</h2>
-            <p className="text-sm text-muted-foreground">Totale: {Math.round(dailyNutrition.totalCalories)} kcal</p>
+            <h2 className="font-semibold text-foreground capitalize">
+              {formatDate(selectedDate)}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Totale: {Math.round(dailyNutrition.totalCalories)} kcal
+            </p>
           </div>
-
-          <Button variant="ghost" size="sm" onClick={() => changeDate('next')} className="p-2">
+          
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => changeDate('next')}
+            className="p-2"
+          >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
@@ -118,13 +142,25 @@ export default function Diary() {
           }, 0);
 
           return (
-            <Card key={meal.id} className="p-4 shadow-card" onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, meal.id)}>
+            <Card 
+              key={meal.id} 
+              className="p-4 shadow-card"
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, meal.id)}
+            >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <h3 className="font-semibold text-foreground">{meal.name}</h3>
-                  <Badge variant="secondary" className="text-xs">{Math.round(mealCalories)} kcal</Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    {Math.round(mealCalories)} kcal
+                  </Badge>
                 </div>
-                <Button size="sm" variant="ghost" className="text-primary p-1" onClick={() => handleAddFood(meal.id)}>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className="text-primary p-1"
+                  onClick={() => handleAddFood(meal.id)}
+                >
                   <Plus className="w-4 h-4" />
                 </Button>
               </div>
@@ -132,13 +168,26 @@ export default function Diary() {
               {mealEntries.length > 0 ? (
                 <div className="space-y-2">
                   {mealEntries.map((entry) => (
-                    <FoodEntryCardAdvanced key={entry.id} entry={entry} onDragStart={handleDragStart} isDragging={draggedEntry?.id === entry.id} />
+                    <FoodEntryCardAdvanced
+                      key={entry.id}
+                      entry={entry}
+                      onDragStart={handleDragStart}
+                      isDragging={draggedEntry?.id === entry.id}
+                    />
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-4 border-2 border-dashed border-muted rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-2">Nessun alimento registrato</p>
-                  <Button size="sm" variant="outline" onClick={() => handleAddFood(meal.id)}>Aggiungi alimento</Button>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Nessun alimento registrato
+                  </p>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleAddFood(meal.id)}
+                  >
+                    Aggiungi alimento
+                  </Button>
                 </div>
               )}
             </Card>
@@ -170,11 +219,7 @@ export default function Diary() {
 
       <FoodSearchModalAdvanced
         isOpen={isSearchModalOpen}
-        onClose={() => {
-          setIsSearchModalOpen(false);
-          setSelectedMealId(null);
-          if (refetch) refetch(); // ensure the diary refreshes after the modal closes
-        }}
+        onClose={() => setIsSearchModalOpen(false)}
         selectedMealId={selectedMealId}
       />
     </div>
