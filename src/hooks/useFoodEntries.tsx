@@ -61,10 +61,8 @@ export function useFoodEntries(date?: string) {
   const targetDate = date || new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    // Mock data - skip database calls for testing
-    setLoading(false);
-    /* 
     if (user) {
+      setLoading(true);
       fetchMeals();
       fetchFoodEntries();
     } else {
@@ -72,7 +70,6 @@ export function useFoodEntries(date?: string) {
       setMeals([]);
       setLoading(false);
     }
-    */
   }, [user, targetDate]);
 
   const fetchMeals = async () => {
@@ -124,19 +121,6 @@ export function useFoodEntries(date?: string) {
     if (!user) return;
 
     try {
-      // Mock adding food entry for testing
-      const mockEntry: FoodEntry = {
-        ...entry,
-        id: `mock-entry-${Date.now()}`,
-        user_id: user.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      setFoodEntries(prev => [...prev, mockEntry]);
-      return { data: mockEntry };
-      
-      /* Real database code - commented for testing
       const { data, error } = await supabase
         .from('food_entries')
         .insert({
@@ -153,7 +137,6 @@ export function useFoodEntries(date?: string) {
 
       setFoodEntries(prev => [...prev, data]);
       return { data };
-      */
     } catch (error) {
       console.error('Error adding food entry:', error);
       return { error };
@@ -164,13 +147,6 @@ export function useFoodEntries(date?: string) {
     if (!user) return;
 
     try {
-      // Mock update for testing
-      setFoodEntries(prev => prev.map(entry => 
-        entry.id === id ? { ...entry, ...updates, updated_at: new Date().toISOString() } : entry
-      ));
-      return { data: updates };
-      
-      /* Real database code - commented for testing
       const { data, error } = await supabase
         .from('food_entries')
         .update(updates)
@@ -186,7 +162,6 @@ export function useFoodEntries(date?: string) {
 
       setFoodEntries(prev => prev.map(entry => entry.id === id ? data : entry));
       return { data };
-      */
     } catch (error) {
       console.error('Error updating food entry:', error);
       return { error };
@@ -197,11 +172,6 @@ export function useFoodEntries(date?: string) {
     if (!user) return;
 
     try {
-      // Mock delete for testing
-      setFoodEntries(prev => prev.filter(entry => entry.id !== id));
-      return { success: true };
-      
-      /* Real database code - commented for testing
       const { error } = await supabase
         .from('food_entries')
         .delete()
@@ -215,7 +185,6 @@ export function useFoodEntries(date?: string) {
 
       setFoodEntries(prev => prev.filter(entry => entry.id !== id));
       return { success: true };
-      */
     } catch (error) {
       console.error('Error deleting food entry:', error);
       return { error };
